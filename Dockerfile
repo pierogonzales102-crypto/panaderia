@@ -12,26 +12,27 @@ RUN apt-get update && apt-get install -y \
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Configurar directorio raíz directo con tus archivos sueltos
 WORKDIR /var/www/html
 COPY . .
 
-# Instalar dependencias oficiales de Laravel
+# SI LA CARPETA PANIS-CO SIGUE FASTIDIANDO, SACAMOS TODO DE AHÍ A LA FUERZA
+RUN if [ -d "panis-co" ]; then cp -r panis-co/. . && rm -rf panis-co; fi
+
+# Instalar dependencias en limpio
 RUN composer install --no-dev --optimize-autoloader
 
-# CONFIGURACIÓN TOTAL DE APACHE PARA RECONOCER EL PUBLIC
+# APUNTAR APACHE DIRECTO A LA CARPETA PUBLIC QUE YA ESTÁ EN LA RAÍZ
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 
-# Dar los permisos de acceso que Apache te está pidiendo a gritos en tu foto
+# PERMISOS DE ACCESO TOTALES (Para que no vuelva a salir Forbidden)
 RUN echo '<Directory /var/www/html/public>\n\
     Options Indexes FollowSymLinks\n\
     AllowOverride All\n\
     Require all granted\n\
 </Directory>' >> /etc/apache2/apache2.conf
 
-# Permisos para las carpetas internas de Laravel
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 CMD ["apache2-foreground"]
