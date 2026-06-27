@@ -12,22 +12,22 @@ RUN apt-get update && apt-get install -y \
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Directorio de trabajo: Entramos directo a donde están tus archivos reales
+# Configurar directorio raíz directo
 WORKDIR /var/www/html
 COPY . .
 
-# CAMBIO CLAVE: Nos movemos a la subcarpeta donde está tu Laravel de verdad
-WORKDIR /var/www/html/panis-co
+# Buscar el composer.json donde sea que haya quedado y mover todo a la raíz de una vez
+RUN find . -maxdepth 2 -name "composer.json" -exec dirname {} \; | xargs -I {} mv {}/* . 2>/dev/null || true
 
-# Instalar dependencias dentro de la carpeta del proyecto
+# Instalar dependencias en la raíz limpia
 RUN composer install --no-dev --optimize-autoloader
 
-# Configurar Apache para apuntar exactamente a la carpeta pública interna
-ENV APACHE_DOCUMENT_ROOT /var/www/html/panis-co/public
+# Configurar Apache directo a la raíz pública
+ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf
 
-# Permisos de almacenamiento correctos internos
-RUN chown -R www-data:www-data /var/www/html/panis-co/storage /var/www/html/panis-co/bootstrap/cache
+# Permisos correctos
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
 
 CMD ["apache2-foreground"]
