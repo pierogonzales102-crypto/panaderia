@@ -12,14 +12,11 @@ RUN apt-get update && apt-get install -y \
 # Instalar Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Configurar directorio raíz
+# Configurar directorio raíz directo
 WORKDIR /var/www/html
 COPY . .
 
-# COPIAR TODO LO DE PANIS-CO A LA RAÍZ (INCLUYENDO OCULTOS) Y BORRAR LA CARPETA REPETIDA
-RUN cp -r panis-co/. . && rm -rf panis-co panis-co-laravel.zip
-
-# Instalar dependencias en la raíz ya organizada
+# Instalar dependencias en la raíz limpia
 RUN composer install --no-dev --optimize-autoloader
 
 # Configurar Apache directo a la raíz pública estándar
