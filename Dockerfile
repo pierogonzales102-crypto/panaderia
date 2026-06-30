@@ -11,10 +11,10 @@ RUN apt-get update && apt-get install -y \
 # Habilitar mod_rewrite de Apache para Laravel
 RUN a2enmod rewrite
 
-# Copiar el código del proyecto al contenedor
+# Copiar el proyecto al contenedor
 COPY . /var/www/html
 
-# Configurar el directorio raíz de Apache hacia la carpeta public de Laravel
+# Configurar el directorio  de Apache hacia la carpeta public de Laravel
 ENV APACHE_DOCUMENT_ROOT /var/www/html/public
 RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/sites-available/*.conf
 RUN sed -ri -e 's!/var/www/!${APACHE_DOCUMENT_ROOT}!g' /etc/apache2/apache2.conf /etc/apache2/conf-available/*.conf
@@ -25,5 +25,19 @@ RUN composer install --no-interaction --optimize-autoloader --no-dev
 
 # Permisos para Laravel
 RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+
+RUN php /var/www/html/artisan config:clear
+RUN php /var/www/html/artisan cache:clear
+
+# Permisos para Laravel
+RUN chown -R www-data:www-data /var/www/html/storage /var/www/html/bootstrap/cache
+
+# Limpieza 
+RUN php /var/www/html/artisan config:clear
+RUN php /var/www/html/artisan cache:clear
+
+# --- PARA CORRER MIGRACIONES EN CADA DEPLOY ---
+RUN php /var/www/html/artisan migrate --force
 
 EXPOSE 80
